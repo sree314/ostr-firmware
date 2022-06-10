@@ -10,12 +10,18 @@ Building from Source
 
 This assumes you have a Linux system and you have `mpy-cross` installed.
 
+First, download an appropriate [adafruit circuitpython library
+bundle](https://circuitpython.org/libraries) in the 7.x series and
+store it in the `bundle/` directory.
+
 In the downloaded repository:
 
 ```
   mkdir build
   make
 ```
+
+This will prepare the files in the `build/` directory.
 
 Then assuming the robot is connected to `/run/media/xyz/CIRCUITPYTHON`, do:
 

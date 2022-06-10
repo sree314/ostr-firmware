@@ -9,8 +9,6 @@ endif
 
 BUNDLE_DIR=$(basename $(BUNDLE))
 
-$(info $(BUNDLE_DIR))
-
 all: $(BUNDLE_DIR) \
 	$(TARGET)/lib/adafruit_dotstar.mpy \
 	$(TARGET)/lib/adafruit_motor \

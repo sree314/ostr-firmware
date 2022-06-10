@@ -7,7 +7,7 @@ TARGET=build
 
 OBJS=$(TARGET)/lib/turtle.mpy $(TARGET)/calibration.py $(TARGET)/test.py
 
-all: $(OBJS)
+all: $(OBJS) bundle
 
 $(TARGET)/lib:
 	mkdir -p $@
@@ -17,3 +17,9 @@ $(TARGET)/lib/turtle.mpy: src/lib/turtle.py $(TARGET)/lib
 
 $(TARGET)/%.py: src/%.py
 	cp $< $@
+
+
+.PHONY: bundle
+
+bundle:
+	$(MAKE) -C bundle

@@ -45,6 +45,8 @@ Rstep3 = digitalio.DigitalInOut(board.D9)
 R_stepper = [Rstep0, Rstep1, Rstep2, Rstep3]
 L_stepper = [Lstep0, Lstep1, Lstep2, Lstep3]
 
+PIEZO_PIN = board.A0
+
 for wire in L_stepper:
     wire.direction = digitalio.Direction.OUTPUT
 

@@ -3,9 +3,9 @@
 MC=mpy-cross
 
 # build directory
-TARGET=build/
+TARGET=build
 
-OBJS=$(TARGET)/lib/turtle.mpy $(TARGET)/calibration.py
+OBJS=$(TARGET)/lib/turtle.mpy $(TARGET)/calibration.py $(TARGET)/test.py
 
 all: $(OBJS)
 

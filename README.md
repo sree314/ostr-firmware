@@ -20,7 +20,7 @@ In the downloaded repository:
 Then assuming the robot is connected to `/run/media/xyz/CIRCUITPYTHON`, do:
 
 ```
-  cp -a build/* /run/media/xyz/CIRCUITPYTHON
+  cp -av build/* /run/media/xyz/CIRCUITPYTHON
 ```
 
 Adjust the paths above as necessary.

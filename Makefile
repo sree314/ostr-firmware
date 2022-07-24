@@ -7,7 +7,7 @@ TARGET=build
 
 JSLOGO2PY=../jslogo2py
 
-OBJS=$(TARGET)/lib/turtle.mpy $(TARGET)/calibration.py $(TARGET)/test.py $(TARGET)/lib/jslogort.mpy
+OBJS=$(TARGET)/lib/turtle.mpy $(TARGET)/calibration.py $(TARGET)/code.py $(TARGET)/run_calibration.py $(TARGET)/test.py $(TARGET)/lib/jslogort.mpy $(TARGET)/wheel_calibration.py
 
 ifeq ("$(wildcard $(JSLOGO2PY)/)","")
   $(error JSLOGO2PY=${JSLOGO2PY} does not exist)

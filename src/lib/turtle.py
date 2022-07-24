@@ -11,6 +11,11 @@ from analogio import AnalogIn
 import calibration
 import pulseio
 import pwmio
+import simpleio
+
+# on the ItsyBitsy M0 Express, use dotstar
+import adafruit_dotstar
+rgbLED = adafruit_dotstar.DotStar(board.APA102_SCK, board.APA102_MOSI, 1, brightness=0.2)
 
 pwm = pwmio.PWMOut(board.A1, frequency=50)
 DEBUG = False
@@ -64,6 +69,7 @@ spacer = ''
 
 servo = adafruit_motor.servo.Servo(pwm, min_pulse=calibration.min_pulse,
                                    max_pulse=calibration.max_pulse)
+
 
 
 def setDebug(val):
@@ -368,3 +374,8 @@ def circle(radius, extent=None, steps=None):
 
 def isButtonPushed():
     return not button.value #pulled up (True) when not pushed
+
+def tone(frequency, duration):
+    ''' Plays a single note of frequency (hz)
+        and duration (seconds). '''
+    simpleio.tone(PIEZO_PIN, frequency, duration=duration)

@@ -67,10 +67,14 @@ class Logo:
     def __init__(self, turtle):
         self.turtle = turtle
         self.routines = StringMap(True)
+        self.scopes = [StringMap(True)]
+
         self.stack = []
         self._repcount = 0
         self.define_motion()
         self.define_control()
+        self.define_misc()
+        self.define_fun()
 
     def run(self, code):
         return self.evaluateExpression(code)
@@ -234,6 +238,61 @@ class Logo:
         self.define(['forever'], self.forever, 1)
         self.define(['repcount', '#'], self.repcount, 0)
 
+    # variables
+    def lvalue(self, name):
+        for i in range(len(self.scopes) - 1, -1, -1):
+            if self.scopes[i].has(name):
+                return self.scopes[i].get(name)
+
+    def maybegetvar(self, name):
+        lval = self.lvalue(name)
+        return lval['value'] if lval else None
+
+    def getvar(self, name):
+        value = self.maybegetvar(name)
+        assert value is not None
+        return value
+
+    def setvar(self, name, value):
+        value = self.copy(value)
+        lval = self.lvalue(name)
+        if lval:
+            lval['value'] = value
+        else:
+            lval = {'value': value}
+            self.scopes[0].set(name, lval)
+            if self.turtle.is_io_var(name):
+                self.turtle.setvar(name, value)
+
+    def make(self, varname, value):
+        sv = self.sexpr(varname)
+        self.setvar(sv, value)
+
+    def wait(self, time):
+        self.turtle.wait(time)
+
+    def beep(self):
+        self.turtle.tone(5300, 0.3)
+
+    def define_misc(self):
+        self.define(['make'], self.make, 2)
+        self.define(['wait'], self.wait, 1)
+        self.define(['beep'], self.beep, 0)
+
+    def true(self):
+        return 1
+
+    def false(self):
+        return 0
+
+    def not_(self, a):
+        return 1 if not self.aexpr(a) else 0
+
+    def define_fun(self):
+        self.define(['not'], self.not_, 1)
+        self.define(['true'], self.true, 0)
+        self.define(['false'], self.false, 0)
+
     # err
 
     # to_arity?
@@ -267,7 +326,7 @@ class Logo:
     # maybegetvar
     # getvar
     # lvalue
-    # setvar
+
     # local
     # set local
 
@@ -453,6 +512,11 @@ class Logo:
             raise NotImplementedError
         else:
             return self.copy(atom)
+
+    def sexpr(self, atom):
+        assert atom is not None
+        if atom == UNARY_MINUS: return '-'
+        if self.Type(atom) == 'word': return str(atom)
 
     def copy(self, value):
         if self.Type(value) == 'list':

@@ -28,11 +28,15 @@ class led_var:
         print(f"{self.name} = {self._value}")
         self._value = value
 
+class rgb_led(list):
+    brightness = None
+
 leftLED = led_var("leftLED")
 rightLED = led_var("rightLED")
 leftDetector = led_var("leftDetector")
 rightDetector = led_var("rightDetector")
 emitter = led_var("emitter")
+rgbLED = rgb_led([0])
 
 def setDebug(val):
     global DEBUG

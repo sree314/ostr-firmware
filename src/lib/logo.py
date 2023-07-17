@@ -196,7 +196,7 @@ class Logo:
         self.define(['heading'], self.heading, 0)
         self.define(['towards'], self.towards, 1)
 
-        self.define(['clearscreen'], self.clearscreen, 0)
+        self.define(['clearscreen', 'cs'], self.clearscreen, 0)
         self.define(['pendown', 'pd'], self.pendown, 0)
         self.define(['penup', 'pu'], self.penup, 0)
 
@@ -266,6 +266,10 @@ class Logo:
         if self.turtle.is_io_var(name):
             self.turtle.setvar(name, value)
 
+
+    # local
+    # set local
+
     def make(self, varname, value):
         sv = self.sexpr(varname)
         self.setvar(sv, value)
@@ -276,10 +280,22 @@ class Logo:
     def beep(self):
         self.turtle.tone(5300, 0.3)
 
+    def setpencolor(self, color):
+        self.turtle.color(color)
+
+    def hideturtle(self):
+        return
+
+    def showturtle(self):
+        return
+
     def define_misc(self):
         self.define(['make'], self.make, 2)
         self.define(['wait'], self.wait, 1)
         self.define(['beep'], self.beep, 0)
+        self.define(['setpencolor', 'setpc', 'setcolor'], self.setpencolor, 1)
+        self.define(['hideturtle', 'ht'], self.hideturtle, 0)
+        self.define(['showturtle', 'st'], self.showturtle, 0)
 
     def true(self):
         return 1
@@ -324,13 +340,6 @@ class Logo:
             assert False, "Unknown type"
 
     # all parsing routines omitted
-    # reparse?
-    # maybegetvar
-    # getvar
-    # lvalue
-
-    # local
-    # set local
 
     def execute(self, statements, options = None):
         statements = list(statements) # shallow copy [.slice in original]

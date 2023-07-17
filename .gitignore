@@ -1,5 +1,9 @@
 build
+build-*
 bundle/adafruit-adafruit-circuitpython-bundle-7.x-mpy-*.zip
 bundle/adafruit-circuitpython-bundle-7.x-mpy-*
+bundle/adafruit-adafruit-circuitpython-bundle-8.x-mpy-*.zip
+bundle/adafruit-circuitpython-bundle-8.x-mpy-*
 ostr.zip
+ostr-*.zip
 

@@ -5,6 +5,7 @@
 import math
 import time
 import calibration
+from collections import namedtuple
 
 _x = 0
 _y = 0
@@ -12,6 +13,26 @@ _heading = 0
 frac_error = 0
 spacer = ''
 DEBUG = True
+
+class led_var:
+    _value = False
+    def __init__(self, name):
+        self.name = name
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        print(f"{self.name} = {self._value}")
+        self._value = value
+
+leftLED = led_var("leftLED")
+rightLED = led_var("rightLED")
+leftDetector = led_var("leftDetector")
+rightDetector = led_var("rightDetector")
+emitter = led_var("emitter")
 
 def setDebug(val):
     global DEBUG

@@ -77,7 +77,7 @@ class Logo:
         self.define_fun()
 
     def run(self, code):
-        return self.evaluateExpression(code)
+        return self.execute(code)
 
     def define(self, names, code, nargs, props = None):
         if props is None: props = {}
@@ -261,8 +261,10 @@ class Logo:
         else:
             lval = {'value': value}
             self.scopes[0].set(name, lval)
-            if self.turtle.is_io_var(name):
-                self.turtle.setvar(name, value)
+
+        # this won't respect scope!
+        if self.turtle.is_io_var(name):
+            self.turtle.setvar(name, value)
 
     def make(self, varname, value):
         sv = self.sexpr(varname)
@@ -334,6 +336,7 @@ class Logo:
         statements = list(statements) # shallow copy [.slice in original]
 
         while len(statements):
+            #print("HERE", statements)
             result = self.evaluateExpression(statements)
             # TODO: return result?
             lastResult = result

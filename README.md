@@ -3,7 +3,7 @@ Robot](https://github.com/aspro648/OSTR/) v2.2 Hardware. It is based
 on the original firmware by Ken Olsen which is used under the
 conditions of the CC-BY-SA 3.0 US license. It is not intended to be
 compatible with the original firmware and has been updated to work
-with CircuitPython 7.3.0.
+with CircuitPython 8.2.0.
 
 Building from Source
 --------------------
@@ -11,7 +11,7 @@ Building from Source
 This assumes you have a Linux system and you have `mpy-cross` installed.
 
 First, download an appropriate [adafruit circuitpython library
-bundle](https://circuitpython.org/libraries) in the 7.x series and
+bundle](https://circuitpython.org/libraries) in the 8.x series and
 store it in the `bundle/` directory.
 
 In the downloaded repository:

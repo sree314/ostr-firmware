@@ -1,8 +1,8 @@
 TARGET=../build
-BUNDLE=$(lastword $(wildcard adafruit-circuitpython-bundle-7.x-mpy-*.zip))
+BUNDLE=$(lastword $(wildcard adafruit-circuitpython-bundle-8.x-mpy-*.zip))
 
 ifeq ($(BUNDLE),)
-$(error "No adafruit-circuitpython-bundle-7.x-mpy-*.zip file found in current directory. Download from: <https://circuitpython.org/libraries>")
+$(error "No adafruit-circuitpython-bundle-8.x-mpy-*.zip file found in current directory. Download from: <https://circuitpython.org/libraries>")
 else
 $(info "Using $(BUNDLE)")
 endif

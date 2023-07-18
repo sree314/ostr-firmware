@@ -1,4 +1,4 @@
-import turtle
+import cpturtle as turtle
 import time
 
 v = True

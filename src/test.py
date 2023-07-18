@@ -13,7 +13,7 @@
 # or run individual tests.
 
 
-import turtle
+import cpturtle as turtle
 import time
 import simpleio
 

@@ -306,6 +306,10 @@ def distance(pointA, pointB):
     return abs((pointB[0] - pointA[0])**2 + (pointB[1] - pointA[1])**2)**0.5
 
 
+def getBearing2(x, y, center_x, center_y):
+    angle = math.degrees(math.atan2(y - center_y, x - center_x))
+    return 90 - angle
+
 def getBearing(x, y, center_x, center_y):
     # https://stackoverflow.com/questions/5058617/bearing-between-two-points
     angle = math.degrees(math.atan2(y - center_y, x - center_x))

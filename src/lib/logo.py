@@ -472,7 +472,7 @@ class Logo:
         while self.peek(l, ['^']):
             op = l.pop(0)
             rhs = self.unaryExpression(l)
-            lhs = math.pow(aexpr(lhs), aexpr(rhs))
+            lhs = math.pow(self.aexpr(lhs), self.aexpr(rhs))
 
         return lhs
 

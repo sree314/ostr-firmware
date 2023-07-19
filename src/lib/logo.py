@@ -75,6 +75,7 @@ class Logo:
         self.define_control()
         self.define_misc()
         self.define_fun()
+        self.define_xmit()
 
     def run(self, code):
         return self.execute(code)
@@ -86,6 +87,15 @@ class Logo:
 
         for n in names:
             self.routines.set(n, {'code': code, 'props': props})
+
+    # transmitters
+
+    def show(self, *args):
+        s = " ".join([str(s) for s in args])
+        print(s)
+
+    def define_xmit(self):
+        self.define(['show'], self.show, 1, {'minimum': 0, 'maximum': -1})
 
     # motion
     def forward(self, a):
@@ -306,10 +316,18 @@ class Logo:
     def not_(self, a):
         return 1 if not self.aexpr(a) else 0
 
+    def and_(self, *args):
+        return 1 if all(args) else 0
+
+    def or_(self, *args):
+        return 1 if any(args) else 0
+
     def define_fun(self):
         self.define(['not'], self.not_, 1)
         self.define(['true'], self.true, 0)
         self.define(['false'], self.false, 0)
+        self.define(['and'], self.and_, 2, {'noeval': True, 'minimum': 0, 'maximum': -1})
+        self.define(['or'], self.or_, 2, {'noeval': True, 'minimum': 0, 'maximum': -1})
 
     # err
 
@@ -472,6 +490,10 @@ class Logo:
 
             if atom[0] == '(':
                 # TODO: check for list-style procedure input calling syntax
+                if len(l) and self.Type(l[0]) == 'word' and self.routines.has(str(l[0])):
+                    if not (len(l) > 1 and self.Type(l[1]) == 'word' and self.isInfix(str(l[1]))):
+                        atom = l.pop(0)
+                        return self.dispatch(atom, l, False)
 
                 result = self.expression(l)
 
@@ -487,6 +509,9 @@ class Logo:
         else:
             assert False, "Internal error in finalExpression"
 
+    def isInfix(self, word):
+        return word in ['+', '-', '*', '/', '%', '^', '=', '<', '>', '<=', '>=', '<>']
+
     def dispatch(self, name, tokenlist, natural):
         name = name.upper()
         proc = self.routines.get(name)
@@ -496,15 +521,34 @@ class Logo:
         if proc['props'].get('special', False):
             raise NotImplementedError
 
+        args = []
         if natural:
-            args = []
+            # note: even in the original, this formulation prevents
+            # and, or, etc. from being truly short-circuiting.
+
             for i in range(proc['props'].get('args')):
                 args.append(self.expression(tokenlist))
         else:
-            raise NotImplementedError
+            while len(tokenlist) and not self.peek(tokenlist, [')']):
+                args.append(self.expression(tokenlist))
+
+            tokenlist.pop(0) # )
+
+            minargs = proc['props']['minimum']
+            maxargs = proc['props']['maximum']
+            assert not len(args) < minargs, "Too few arguments"
+            if maxargs != -1:
+                assert not len(args) > maxargs, "Too many arguments"
 
         if proc['props'].get('noeval', False):
-            raise NotImplementedError
+            def noeval():
+                self.stack.append(name)
+                rv = proc['code'](*args)
+                self.stack.pop()
+                return rv
+
+            return noeval()  # TODO: Was noeval only for non-blocking or did it have semantic purpose?
+
 
         self.stack.append(name)
         rv = proc['code'](*args)

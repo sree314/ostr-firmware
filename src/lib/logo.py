@@ -30,6 +30,7 @@
 
 import math
 import re
+import random
 
 NUMBER = re.compile("-?([0-9]*\\.?[0-9]+([eE][\\-+]?[0-9]+)?)")
 UNARY_MINUS = '<UNARYMINUS>'
@@ -77,6 +78,13 @@ class Logo:
         self.define_fun()
         self.define_xmit()
 
+    def defer(self, func, *args):
+        def deferred():
+            a = [aa() for aa in args]
+            return func(*a)
+
+        return deferred
+
     def run(self, code):
         return self.execute(code)
 
@@ -92,7 +100,7 @@ class Logo:
 
     def show(self, *args):
         s = " ".join([str(s) for s in args])
-        print(s)
+        print("show", s)
 
     def define_xmit(self):
         self.define(['show'], self.show, 1, {'minimum': 0, 'maximum': -1})
@@ -249,12 +257,36 @@ class Logo:
         if self.Type(tf) == 'list':
             tf = self.evaluateExpression(tf)
 
-        statements2 = args
+        statements2 = args # unsure when this triggers?
         tf = self.aexpr(tf)
         if not statements2:
-            return self.execute(statements) if tf else None
+            return self.execute(statements, {'returnResult': True}) if tf else None
         else:
-            return self.execute(statements) if tf else self.execute(statements2)
+            return self.execute(statements, {'returnResult': True}) if tf else self.execute(statements2, {'returnResult': True})
+
+    def ifelse(self, tf, statements1, statements2):
+        if self.Type(tf) == 'list':
+            tf = self.evaluateExpression(tf)
+
+        return self.execute(statements1, {'returnResult': True}) if tf else self.execute(statements2, {'returnResult': True})
+
+    def checkevalblock(self, block):
+        assert self.Type(block) == 'list'
+        return block
+
+    def while_(self, tfexpression, block):
+        block = self.checkevalblock(block)
+
+        tf = tfexpression
+        if self.Type(tf) == 'list':
+            tf = self.evaluateExpression(tf)
+
+        while tf:
+            self.execute(block)
+            tf = tfexpression
+            if self.Type(tf) == 'list':
+                tf = self.evaluateExpression(tf)
+            break
 
     def define_control(self):
         # TODO: run, runresult
@@ -262,6 +294,8 @@ class Logo:
         self.define(['forever'], self.forever, 1)
         self.define(['repcount', '#'], self.repcount, 0)
         self.define(['if'], self.if_, 2, {'maximum': 3})
+        self.define(['ifelse'], self.ifelse, 3)
+        self.define(['while'], self.while_, 2, {'noeval': True})
 
     # variables
     def lvalue(self, name):
@@ -314,6 +348,15 @@ class Logo:
     def showturtle(self):
         return
 
+    def random(self, max_, *args):
+        if len(args) == 0:
+            max_ = self.aexpr(max_)
+            return random.randint(0, max_)
+        else:
+            start = self.aexpr(max_)
+            end = self.aexpr(args[0])
+            return random.randint(start, end)
+
     def define_misc(self):
         self.define(['make'], self.make, 2)
         self.define(['wait'], self.wait, 1)
@@ -321,6 +364,7 @@ class Logo:
         self.define(['setpencolor', 'setpc', 'setcolor'], self.setpencolor, 1)
         self.define(['hideturtle', 'ht'], self.hideturtle, 0)
         self.define(['showturtle', 'st'], self.showturtle, 0)
+        self.define(['random'], self.random, 1, {'maximum': 2})
 
     def true(self):
         return 1
@@ -393,10 +437,10 @@ class Logo:
         lastResult = None
 
         while len(statements):
-            #print("HERE", statements)
             result = self.evaluateExpression(statements)
 
             if result is not None and not options.get('returnResult', False):
+                print(statements, result)
                 assert False, "Result supplied when not wanted"
 
             lastResult = result
@@ -418,7 +462,7 @@ class Logo:
         return False
 
     def evaluateExpression(self, l):
-        return self.expression(l)
+        return self.expression(l)()
 
     def expression(self, l):
         return self.relationalExpression(l)
@@ -452,14 +496,18 @@ class Logo:
 
         while self.peek(l, ['+', '-']):
             op = l.pop(0)
-            rhs = self.multiplicativeExpression(l)
 
-            if op == '+':
-                lhs = self.aexpr(lhs) + self.aexpr(rhs)
-            elif op == '-':
-                lhs = self.aexpr(lhs) - self.aexpr(rhs)
-            else:
-                assert False, "Internal error in additiveExpression"
+            def lhsf(lhs):
+                rhs = self.multiplicativeExpression(l)
+
+                if op == '+':
+                    return self.defer(lambda lhs, rhs: self.aexpr(lhs) + self.aexpr(rhs), lhs, rhs)
+                elif op == '-':
+                    return self.defer(lambda lhs, rhs: self.aexpr(lhs) - self.aexpr(rhs), lhs, rhs)
+                else:
+                    assert False, "Internal error in additiveExpression"
+
+            lhs = lhsf(lhs)
 
         return lhs
 
@@ -499,7 +547,7 @@ class Logo:
         if self.peek(l, [UNARY_MINUS]):
             op = l.pop(0)
             rhs = self.unaryExpression(l)
-            return -self.aexpr(rhs)
+            return self.defer(lambda rhs: -self.aexpr(rhs), rhs)
         else:
             return self.finalExpression(l)
 
@@ -513,13 +561,15 @@ class Logo:
             return atom
         elif ty == 'word':
             if self.isNumber(atom):
-                return float(atom)
+                return lambda: float(atom)
 
             if atom[0] == '"' or atom[0] == "'":
-                return atom[1:]
+                literal = atom[1:]
+                return lambda: literal
 
             if atom[0] == ':':
-                return self.getvar(atom[1:])
+                varname = atom[1:]
+                return lambda: self.getvar(varname)
 
             if atom[0] == '(':
                 # TODO: check for list-style procedure input calling syntax
@@ -567,8 +617,9 @@ class Logo:
 
             tokenlist.pop(0) # )
 
-            minargs = proc['props']['minimum']
-            maxargs = proc['props']['maximum']
+            minargs = proc['props'].get('minimum', proc['props']['args'])
+            maxargs = proc['props'].get('maximum', proc['props']['args'])
+
             assert not len(args) < minargs, "Too few arguments"
             if maxargs != -1:
                 assert not len(args) > maxargs, "Too many arguments"
@@ -580,13 +631,16 @@ class Logo:
                 self.stack.pop()
                 return rv
 
-            return noeval()  # TODO: Was noeval only for non-blocking or did it have semantic purpose?
+            return noeval
 
+        def doeval():
+            self.stack.append(name)
+            a = [aa() for aa in args]
+            rv = proc['code'](*a)
+            self.stack.pop()
+            return rv
 
-        self.stack.append(name)
-        rv = proc['code'](*args)
-        self.stack.pop()
-        return rv
+        return doeval
 
     def aexpr(self, atom):
         if atom is not None and self.Type(atom) == 'word':

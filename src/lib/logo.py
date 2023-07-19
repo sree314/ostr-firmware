@@ -245,11 +245,23 @@ class Logo:
 
         self._repcount = old_repcount
 
+    def if_(self, tf, statements, *args):
+        if self.Type(tf) == 'list':
+            tf = self.evaluateExpression(tf)
+
+        statements2 = args
+        tf = self.aexpr(tf)
+        if not statements2:
+            return self.execute(statements) if tf else None
+        else:
+            return self.execute(statements) if tf else self.execute(statements2)
+
     def define_control(self):
         # TODO: run, runresult
         self.define(['repeat'], self.repeat, 2)
         self.define(['forever'], self.forever, 1)
         self.define(['repcount', '#'], self.repcount, 0)
+        self.define(['if'], self.if_, 2, {'maximum': 3})
 
     # variables
     def lvalue(self, name):
@@ -374,12 +386,19 @@ class Logo:
     # all parsing routines omitted
 
     def execute(self, statements, options = None):
+        if options is None: options = {}
+
         statements = list(statements) # shallow copy [.slice in original]
+
+        lastResult = None
 
         while len(statements):
             #print("HERE", statements)
             result = self.evaluateExpression(statements)
-            # TODO: return result?
+
+            if result is not None and not options.get('returnResult', False):
+                assert False, "Result supplied when not wanted"
+
             lastResult = result
 
         return lastResult

@@ -271,22 +271,22 @@ class Logo:
         return self.execute(statements1, {'returnResult': True}) if tf else self.execute(statements2, {'returnResult': True})
 
     def checkevalblock(self, block):
+        block = block()
         assert self.Type(block) == 'list'
         return block
 
     def while_(self, tfexpression, block):
         block = self.checkevalblock(block)
 
-        tf = tfexpression
+        tf = tfexpression()
         if self.Type(tf) == 'list':
             tf = self.evaluateExpression(tf)
 
         while tf:
             self.execute(block)
-            tf = tfexpression
+            tf = tfexpression()
             if self.Type(tf) == 'list':
                 tf = self.evaluateExpression(tf)
-            break
 
     def define_control(self):
         # TODO: run, runresult
@@ -376,10 +376,16 @@ class Logo:
         return 1 if not self.aexpr(a) else 0
 
     def and_(self, *args):
-        return 1 if all(args) else 0
+        for aa in args:
+            if not aa(): return 0
+
+        return 1
 
     def or_(self, *args):
-        return 1 if any(args) else 0
+        for aa in args:
+            if aa(): return 1
+
+        return 0
 
     def xor_(self, *args):
         if len(args):
@@ -472,22 +478,26 @@ class Logo:
 
         while self.peek(l, ['=', '<', '>', '<=', '>=', '<>']):
             op = l.pop(0)
-            rhs = self.additiveExpression(l)
 
-            if op == '<':
-                lhs = 1 if self.aexpr(lhs) < self.aexpr(rhs) else 0
-            elif op == '>':
-                lhs = 1 if self.aexpr(lhs) > self.aexpr(rhs) else 0
-            elif op == '=':
-                lhs = 1 if self.equal(lhs, rhs) else 0
-            elif op == '<=':
-                lhs = 1 if  self.aexpr(lhs) <= self.aexpr(rhs) else 0
-            elif op == '>=':
-                lhs = 1 if self.aexpr(lhs) >= self.aexpr(rhs) else 0
-            elif op == '<>':
-                lhs = 1 if not self.equal(lhs, rhs) else 0
-            else:
-                assert False, "Internal error in relationalExpression"
+            def lhsf(lhs):
+                rhs = self.additiveExpression(l)
+
+                if op == '<':
+                    return self.defer(lambda lhs, rhs: 1 if self.aexpr(lhs) < self.aexpr(rhs) else 0, lhs, rhs)
+                elif op == '>':
+                    return self.defer(lambda lhs, rhs: 1 if self.aexpr(lhs) > self.aexpr(rhs) else 0, lhs, rhs)
+                elif op == '=':
+                    return self.defer(lambda lhs, rhs: 1 if self.equal(lhs, rhs) else 0, lhs, rhs)
+                elif op == '<=':
+                    return self.defer(lambda lhs, rhs: 1 if self.aexpr(lhs) <= self.aexpr(rhs) else 0, lhs, rhs)
+                elif op == '>=':
+                    return self.defer(lambda lhs, rhs: 1 if self.aexpr(lhs) >= self.aexpr(rhs) else 0, lhs, rhs)
+                elif op == '<>':
+                    return self.defer(lambda lhs, rhs: 1 if not self.equal(lhs, rhs) else 0, lhs, rhs)
+                else:
+                    assert False, "Internal error in relationalExpression"
+
+            lhs = lhsf(lhs)
 
         return lhs
 
@@ -516,20 +526,30 @@ class Logo:
 
         while self.peek(l, ['*', '/', '%']):
             op = l.pop(0)
-            rhs = self.powerExpression(l)
+            def lhsf(lhs):
+                rhs = self.powerExpression(l)
+                if op == '*':
+                    return self.defer(lambda lhs, rhs: self.aexpr(lhs) * self.aexpr(rhs), lhs, rhs)
+                elif op == '/':
+                    def dodiv(lhs, rhs):
+                        n = self.aexpr(lhs)
+                        d = self.aexpr(rhs)
+                        assert d != 0
+                        return n / d
 
-            if op == '*':
-                lhs = self.aexpr(lhs) * self.aexpr(rhs)
-            elif op == '/':
-                n = self.aexpr(lhs)
-                d = self.aexpr(rhs)
-                lhs = n / d
-            elif op == '%':
-                n = self.aexpr(lhs)
-                d = self.aexpr(rhs)
-                lhs = n % d
-            else:
-                assert False, "Internal error in multiplicativeExpression"
+                    return self.defer(dodiv, lhs, rhs)
+                elif op == '%':
+                    def domod(lhs, rhs):
+                        n = self.aexpr(lhs)
+                        d = self.aexpr(rhs)
+                        assert d != 0
+                        return n % d
+
+                    return self.defer(domod, lhs, rhs)
+                else:
+                    assert False, "Internal error in multiplicativeExpression"
+
+            lhs = lhsf(lhs)
 
         return lhs
 
@@ -538,8 +558,12 @@ class Logo:
 
         while self.peek(l, ['^']):
             op = l.pop(0)
-            rhs = self.unaryExpression(l)
-            lhs = math.pow(self.aexpr(lhs), self.aexpr(rhs))
+            def lhsf(lhs):
+                rhs = self.unaryExpression(l)
+                return self.defer(lambda lhs, rhs: math.pow(self.aexpr(lhs), self.aexpr(rhs)),
+                                  lhs, rhs)
+
+            lhs = lhsf(lhs)
 
         return lhs
 
@@ -558,7 +582,7 @@ class Logo:
         ty = self.Type(atom)
 
         if ty == 'array' or ty == 'list':
-            return atom
+            return lambda: atom
         elif ty == 'word':
             if self.isNumber(atom):
                 return lambda: float(atom)

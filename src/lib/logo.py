@@ -365,7 +365,7 @@ class Logo:
         if isinstance(atom, str) or isinstance(atom, (float, int)):
             return 'word'
         elif isinstance(atom, list): # TODO: LogoArray
-            return 'array'
+            return 'list'
         elif not atom:
             assert False, "Unexpected value for atom"
         else:

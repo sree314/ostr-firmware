@@ -186,6 +186,8 @@ class Logo:
     def buttonp(self):
         return 1 if self.turtle.buttonp() else 0
 
+    button = buttonp # only one button
+
     def define_motion(self):
         self.define(['forward', 'fd'], self.forward, 1)
         self.define(['back', 'bk'], self.back, 1)
@@ -212,6 +214,7 @@ class Logo:
 
         self.define(['pendownp', 'pendown?'], self.pendownp, 0)
         self.define(['buttonp', 'button?'], self.buttonp, 0)
+        self.define(['button'], self.button, 0)
 
     # control
     def repeat(self, count, statements):
@@ -322,12 +325,23 @@ class Logo:
     def or_(self, *args):
         return 1 if any(args) else 0
 
+    def xor_(self, *args):
+        if len(args):
+            x = bool(args[0])
+            for y in args[1:]:
+                x = x != bool(y)
+
+            return 1 if x else 0
+        else:
+            return 0
+
     def define_fun(self):
         self.define(['not'], self.not_, 1)
         self.define(['true'], self.true, 0)
         self.define(['false'], self.false, 0)
         self.define(['and'], self.and_, 2, {'noeval': True, 'minimum': 0, 'maximum': -1})
         self.define(['or'], self.or_, 2, {'noeval': True, 'minimum': 0, 'maximum': -1})
+        self.define(['xor'], self.xor_, 2, {'minimum': 0, 'maximum': -1})
 
     # err
 

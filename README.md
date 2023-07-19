@@ -5,6 +5,12 @@ conditions of the CC-BY-SA 3.0 US license. It is not intended to be
 compatible with the original firmware and has been updated to work
 with CircuitPython 8.2.0.
 
+This 2023 edition of the firmware now contains a Logo interpreter
+written in CircuitPython. The interpreter operators on a stream of
+parsed tokens produced by the 2023 edition of JavaScript [Logo
+interpreter](https://github.com/sree314/jslogo2py/).
+
+
 Building from Source
 --------------------
 

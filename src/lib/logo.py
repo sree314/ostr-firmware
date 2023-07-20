@@ -196,6 +196,12 @@ class Logo:
 
     button = buttonp # only one button
 
+    def leftsensor(self):
+        return self.turtle.leftDetector()
+
+    def rightsensor(self):
+        return self.turtle.rightDetector()
+
     def define_motion(self):
         self.define(['forward', 'fd'], self.forward, 1)
         self.define(['back', 'bk'], self.back, 1)
@@ -223,6 +229,9 @@ class Logo:
         self.define(['pendownp', 'pendown?'], self.pendownp, 0)
         self.define(['buttonp', 'button?'], self.buttonp, 0)
         self.define(['button'], self.button, 0)
+
+        self.define(['leftsensor'], self.leftsensor, 0)
+        self.define(['rightsensor'], self.rightsensor, 0)
 
     # control
     def repeat(self, count, statements):

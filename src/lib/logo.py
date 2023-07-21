@@ -302,13 +302,13 @@ class Logo:
             tf = self.evaluateExpression(tf)
 
         tf = self.aexpr(tf)
-        self.scopes[len(self.scopes) - 1]._test = tf
+        self.scopes[-1]._test = tf
 
     def iftrue(self, statements):
         statements = self.lexpr(statements)
         assert hasattr(self.scopes[len(self.scopes) - 1], '_test'), "test must be called first"
 
-        tf = self.scopes[len(self.scopes)-1]._test
+        tf = self.scopes[-1]._test
 
         if tf: return self.execute(statements, {'returnResult': True})
 
@@ -316,9 +316,77 @@ class Logo:
         statements = self.lexpr(statements)
         assert hasattr(self.scopes[len(self.scopes) - 1], '_test'), "test must be called first"
 
-        tf = self.scopes[len(self.scopes)-1]._test
+        tf = self.scopes[-1]._test
 
         if not tf: return self.execute(statements, {'returnResult': True})
+
+    def for_(self, control, statements):
+        control = self.lexpr(control)
+        statements = self.lexpr(statements)
+
+        def sign(x):
+            return -1 if x < 0 else 1 if x > 0 else 0
+
+        varname = self.sexpr(control.pop(0))
+
+        current = start = self.aexpr(self.evaluateExpression(control))
+        limit = self.aexpr(self.evaluateExpression(control))
+
+        if len(control):
+            step = self.aexpr(self.evaluateExpression(control))
+        else:
+            step = -1 if limit < start else 1
+
+        while not sign(current - limit) == sign(step):
+            self.setlocal(varname, current)
+            self.execute(statements)
+            current += step
+
+    def dotimes(self, control, statements):
+        control = self.lexpr(control)
+        statements = self.lexpr(statements)
+
+        varname = self.sexpr(control.pop(0))
+        current = 1
+
+        times = self.aexpr(self.evaluateExpression(control))
+        while not (current > times):
+            self.setlocal(varname, current)
+            self.execute(statements)
+            current += 1
+
+    def do_while(self, block, tfexpression):
+        block = self.checkevalblock(block)
+        tf = True
+        while tf:
+            self.execute(block)
+            tf = tfexpression()
+            if self.Type(tf) == 'list':
+                tf = self.evaluateExpression(tf)
+
+    def do_until(self, block, tfexpression):
+        block = self.checkevalblock(block)
+        tf = False
+        while not tf:
+            self.execute(block)
+            tf = tfexpression()
+            if self.Type(tf) == 'list':
+                tf = self.evaluateExpression(tf)
+
+    def until(self, tfexpression, block):
+        block = self.checkevalblock(block)
+        tf = tfexpression()
+        if self.Type(tf) == 'list':
+            tf = self.evaluateExpression(tf)
+
+        while not tf:
+            self.execute(block)
+            tf = tfexpression()
+            if self.Type(tf) == 'list':
+                tf = self.evaluateExpression(tf)
+
+    #TODO: case
+    #TODO: cond
 
     def define_control(self):
         # TODO: run, runresult
@@ -331,6 +399,11 @@ class Logo:
         self.define(['test'], self.test, 1)
         self.define(['iftrue', 'ift'], self.iftrue, 1)
         self.define(['iffalse', 'iff'], self.iffalse, 1)
+        self.define(['for'], self.for_, 2)
+        self.define(['dotimes'], self.dotimes, 2)
+        self.define(['do.while'], self.do_while, 2, {'noeval': True})
+        self.define(['do.until'], self.do_until, 2, {'noeval': True})
+        self.define(['until'], self.until, 2, {'noeval': True})
 
     # variables
     def lvalue(self, name):
@@ -361,8 +434,14 @@ class Logo:
             self.turtle.setvar(name, value)
 
 
-    # local
-    # set local
+    def local(self, name):
+        scope = self.scopes[-1]
+        scope.set(self.sexpr(name), {'value': None})
+
+    def setlocal(self, name, value):
+        value = self.copy(value)
+        scope = self.scopes[-1]
+        scope.set(self.sexpr(name), {'value': value})
 
     def make(self, varname, value):
         sv = self.sexpr(varname)

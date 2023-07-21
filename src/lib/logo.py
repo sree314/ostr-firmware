@@ -297,6 +297,29 @@ class Logo:
             if self.Type(tf) == 'list':
                 tf = self.evaluateExpression(tf)
 
+    def test(self, tf):
+        if self.Type(tf) == 'list':
+            tf = self.evaluateExpression(tf)
+
+        tf = self.aexpr(tf)
+        self.scopes[len(self.scopes) - 1]._test = tf
+
+    def iftrue(self, statements):
+        statements = self.lexpr(statements)
+        assert hasattr(self.scopes[len(self.scopes) - 1], '_test'), "test must be called first"
+
+        tf = self.scopes[len(self.scopes)-1]._test
+
+        if tf: return self.execute(statements, {'returnResult': True})
+
+    def iffalse(self, statements):
+        statements = self.lexpr(statements)
+        assert hasattr(self.scopes[len(self.scopes) - 1], '_test'), "test must be called first"
+
+        tf = self.scopes[len(self.scopes)-1]._test
+
+        if not tf: return self.execute(statements, {'returnResult': True})
+
     def define_control(self):
         # TODO: run, runresult
         self.define(['repeat'], self.repeat, 2)
@@ -305,6 +328,9 @@ class Logo:
         self.define(['if'], self.if_, 2, {'maximum': 3})
         self.define(['ifelse'], self.ifelse, 3)
         self.define(['while'], self.while_, 2, {'noeval': True})
+        self.define(['test'], self.test, 1)
+        self.define(['iftrue', 'ift'], self.iftrue, 1)
+        self.define(['iffalse', 'iff'], self.iffalse, 1)
 
     # variables
     def lvalue(self, name):

@@ -16,8 +16,9 @@ DEBUG = True
 
 class led_var:
     _value = False
-    def __init__(self, name):
+    def __init__(self, name, value = False):
         self.name = name
+        self._value = value
 
     @property
     def value(self):
@@ -33,8 +34,8 @@ class rgb_led(list):
 
 leftLED = led_var("leftLED")
 rightLED = led_var("rightLED")
-leftDetector = led_var("leftDetector")
-rightDetector = led_var("rightDetector")
+leftDetector = led_var("leftDetector", 5001)
+rightDetector = led_var("rightDetector", 5001)
 emitter = led_var("emitter")
 rgbLED = rgb_led([0])
 

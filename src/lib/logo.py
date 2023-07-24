@@ -77,6 +77,7 @@ class Logo:
         self.define_misc()
         self.define_fun()
         self.define_xmit()
+        self.define_wk()
 
     def isKeyword(self, atom, match):
         if not self.Type(atom) == 'word':
@@ -568,8 +569,6 @@ class Logo:
 
     # PRNG?
 
-    # StringMap?
-
     # LogoArray?
 
     # Stream?
@@ -577,6 +576,108 @@ class Logo:
     # routines, scopes, plists?
 
     # Type
+
+    def to(self, list_):
+        name = self.sexpr(list_.pop(0))
+        if self.isNumber(name) or self.isOperator(name):
+            assert False, "TO: identifier needed for procedure name"
+
+        inputs = []
+        optional_inputs = []
+        rest = None
+        length = None
+        block = []
+
+        REQUIRED = 0
+        OPTIONAL = 1
+        REST = 2
+        DEFAULT = 3
+        BLOCK = 4
+
+        state = REQUIRED
+        sawEnd = False
+
+        while len(list_):
+            atom = list_.pop(0)
+            if self.isKeyword(atom, 'END'):
+                sawEnd = True
+                break
+
+            if state == REQUIRED:
+                if self.Type(atom) == 'word' and str(atom)[0] == ':':
+                    inputs.append(atom[1:])
+                    continue
+                state = OPTIONAL
+
+            if state == OPTIONAL:
+                if self.Type(atom) == 'list' and len(atom) > 1 and str(atom[0])[0] == ':':
+                    n = atom.pop(0)[1:]
+                    optional_inputs.append([n, atom])
+                    continue
+                state = REST
+
+            if state == REST:
+                state = DEFAULT
+                if self.Type(atom) == 'list' and len(atom) == 1 and str(atom[0])[0] == ':':
+                    rest = atom[0][1:]
+                    continue
+
+            if state == DEFAULT:
+                state = BLOCK
+                if self.Type(atom) == 'word' and self.isNumber(atom):
+                    length = self.parseFloat(atom) # TODO
+                    continue
+
+            block.append(atom)
+
+        assert sawEnd, "TO did not see END"
+
+        self.defineProc(name, inputs, optional_inputs, rest, length, block)
+
+    def defineProc(self, name, inputs, optional_inputs, rest, def_, block):
+        if self.routines.has(name) and self.routines.get(name)['proc'].get('primitive', False):
+            assert False, "Can't redefine primitive"
+
+        if def_ is not None:
+            if def_ < len(inputs) or (not rest and def_ > len(inputs) + len(optional_inputs)):
+                assert False, "Incorrect default number of inputs"
+
+        length = len(inputs) if def_ is None else def_
+
+        def func(*args):
+            scope = StringMap(True)
+            self.scopes.append(scope)
+
+            i = 0
+
+            while i < len(inputs) and i < len(args):
+                scope.set(inputs[i], {'value': args[i]})
+                i += 1
+
+            while i < len(inputs) + len(optional_inputs) and i < len(args):
+                op = optional_inputs[i - len(inputs)]
+                scope.set(op[0], {'value': args[i]})
+
+            while i < len(inputs) + len(optional_inputs):
+                op = optional_inputs[i - len(inputs)]
+                scope.set(op[0], {'value': self.evaluateExpression(op[1])})
+                i += 1
+
+            if rest is not None:
+                scope.set(rest, {'value': list(args[i:])})
+
+            self.execute(block) # TODO: handle Output?
+            self.scopes.pop()
+
+        self.routines.set(name, {'code': func,
+                                 'props': {'args': len(inputs),
+                                           'inputs': inputs, 'optional_inputs': optional_inputs,
+                                           'rest': rest, 'def': def_, 'block': block,
+                                           'minimum': len(inputs), 'default': length,
+                                           'maximum': -1 if rest else len(inputs) + len(optional_inputs)}})
+
+    def define_wk(self):
+        self.define(['to'], self.to, 1, {'special': True})
 
     def Type(self, atom):
         assert atom is not None, "Type, Atom should not be none"
@@ -776,6 +877,9 @@ class Logo:
     def isInfix(self, word):
         return word in ['+', '-', '*', '/', '%', '^', '=', '<', '>', '<=', '>=', '<>']
 
+    def isOperator(self, word):
+        return self.isInfix(word) or word in ['[', ']', '{', '}', '(', ')']
+
     def dispatch(self, name, tokenlist, natural):
         name = name.upper()
         proc = self.routines.get(name)
@@ -783,7 +887,11 @@ class Logo:
             assert False, "ERROR: {} undefined".format(name)
 
         if proc['props'].get('special', False):
-            raise NotImplementedError
+            self.stack.append(name)
+            proc['code'](tokenlist)
+            self.stack.pop()
+
+            return lambda: None
 
         args = []
         if natural:

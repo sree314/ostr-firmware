@@ -78,6 +78,16 @@ class Logo:
         self.define_fun()
         self.define_xmit()
 
+    def isKeyword(self, atom, match):
+        if not self.Type(atom) == 'word':
+            return False
+
+        atom = str(atom).upper()
+
+        # TODO: keywordAliases
+
+        return atom == match
+
     def defer(self, func, *args):
         def deferred():
             a = [aa() for aa in args]
@@ -385,8 +395,39 @@ class Logo:
             if self.Type(tf) == 'list':
                 tf = self.evaluateExpression(tf)
 
-    #TODO: case
-    #TODO: cond
+    def case(self, value, clauses):
+        clauses = self.lexpr(clauses)
+
+        for clause in clauses:
+            clause = self.lexpr(clause)
+            first = clause.pop(0)
+
+            if self.isKeyword(first, 'ELSE'):
+                return self.evaluateExpression(clause)
+
+            for x in self.lexpr(first):
+                # this fails for the example in the documentation, e.g. for strings
+                # and should probably be x = self.evaluateExpression([x])
+                # print(x, self.Type(x), value, self.Type(value))
+                # if any([self.equal(x, value) for x in self.lexpr(first)]):
+
+                if self.equal(x, value):
+                    return self.evaluateExpression(clause)
+
+        return None
+
+    def cond(self, clauses):
+        clauses = self.lexpr(clauses)
+
+        for clause in clauses:
+            clause = self.lexpr(clause)
+            first = clause.pop(0)
+            if self.isKeyword(first, 'ELSE'):
+                return self.evaluateExpression(clause)
+
+            result = self.evaluateExpression(self.lexpr(first))
+            if result:
+                return self.evaluateExpression(clause)
 
     def define_control(self):
         # TODO: run, runresult
@@ -404,6 +445,8 @@ class Logo:
         self.define(['do.while'], self.do_while, 2, {'noeval': True})
         self.define(['do.until'], self.do_until, 2, {'noeval': True})
         self.define(['until'], self.until, 2, {'noeval': True})
+        self.define(['case'], self.case, 2)
+        self.define(['cond'], self.cond, 1)
 
     # variables
     def lvalue(self, name):
@@ -813,7 +856,7 @@ class Logo:
 
         if at == 'word':
             if isinstance(a, (int, float)) or isinstance(b, (int, float)):
-                return a == b
+                return float(a) == float(b)
             else:
                 return str(a) == str(b)
         elif at == 'list':

@@ -10,6 +10,13 @@ written in CircuitPython. The interpreter operators on a stream of
 parsed tokens produced by the 2023 edition of JavaScript [Logo
 interpreter](https://github.com/sree314/jslogo2py/).
 
+The Logo interpreter is an incomplete Python/CircuitPython translation
+of the JavaScript logo interpreter. It also contains additional
+features. Variables `LED1', `LED2` and `EMITTER` control the two LEDs
+and the IR LEDs respectively. The functions `LEFTSENSOR` and
+`RIGHTSENSOR` yield IR detector readings. The `BUTTONP` maps to the
+button on the OSTR.
+
 
 Building from Source
 --------------------
